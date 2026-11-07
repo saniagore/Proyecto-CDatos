@@ -4,14 +4,28 @@ from .config import get_olap_engine, OLAP_SCHEMA
 def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append', chunksize: int = 5000):
     """
     Carga un DataFrame de Pandas a una tabla en PostgreSQL usando SQLAlchemy.
+    Si if_exists='truncate_first', vacía la tabla antes de insertar para evitar duplicados.
     """
     engine = get_olap_engine()
     print(f"-> Cargando {len(df)} registros en la tabla '{table_name}'...")
-    df.to_sql(
-        name=table_name.lower(),
+    
+    # Normalizar nombres de columnas a minúsculas para coincidir exactamente con PostgreSQL
+    df_to_load = df.copy()
+    df_to_load.columns = [col.lower() for col in df_to_load.columns]
+    tbl_name = table_name.lower()
+
+    if if_exists == 'truncate_first':
+        with engine.begin() as conn:
+            conn.exec_driver_sql(f"TRUNCATE TABLE {OLAP_SCHEMA}.{tbl_name} CASCADE;")
+        actual_if_exists = 'append'
+    else:
+        actual_if_exists = if_exists
+
+    df_to_load.to_sql(
+        name=tbl_name,
         con=engine,
         schema=OLAP_SCHEMA,
-        if_exists=if_exists,
+        if_exists=actual_if_exists,
         index=False,
         chunksize=chunksize,
         method='multi'

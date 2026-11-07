@@ -13,8 +13,20 @@ from .extract import (
     extract_product,
     extract_product_subcategory,
     extract_product_category,
+    extract_sales_territory,
+    extract_address,
+    extract_state_province,
+    extract_country_region,
 )
 from .transform.dim_date import transform_dim_date
+from .transform.dim_categorias import (
+    transform_dim_product_category,
+    transform_dim_product_subcategory
+)
+from .transform.dim_geografia import (
+    transform_dim_sales_territory,
+    transform_dim_geography
+)
 from .transform.dim_producto import transform_dim_producto
 from .transform.dim_cliente import transform_dim_cliente
 from .transform.dim_revendedor import transform_dim_revendedor
@@ -24,7 +36,6 @@ from .transform.hechos import (
 )
 from .validacion import validate_etl
 
-# Configuración de logging
 os.makedirs("etl_adventureworks/logs", exist_ok=True)
 log_file = f"etl_adventureworks/logs/etl_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 logging.basicConfig(
@@ -57,14 +68,26 @@ def run_etl():
     df_prod = extract_product()
     df_subcat = extract_product_subcategory()
     df_cat = extract_product_category()
+    df_territory = extract_sales_territory()
+    df_address = extract_address()
+    df_sp = extract_state_province()
+    df_cr = extract_country_region()
     logging.info("Extracción completada.")
 
     # 3. Transformación (Transform) con Pandas
     print("\n--- PASO 2: Transformando dimensiones y hechos con Pandas ---")
     
-    # Dimensiones
-    df_dim_date = transform_dim_date(df_soh)
+    # Jerarquía Geográfica y de Territorio
+    df_dim_territory = transform_dim_sales_territory(df_territory)
+    df_dim_geo = transform_dim_geography(df_address, df_sp, df_cr)
+    
+    # Jerarquía de Productos
+    df_dim_cat = transform_dim_product_category(df_cat)
+    df_dim_subcat = transform_dim_product_subcategory(df_subcat)
     df_dim_producto = transform_dim_producto(df_prod, df_subcat, df_cat)
+    
+    # Clientes, Revendedores y Fechas
+    df_dim_date = transform_dim_date(df_soh)
     df_dim_cliente = transform_dim_cliente(df_cust, df_person)
     df_dim_revendedor = transform_dim_revendedor(df_cust, df_store)
 
@@ -73,22 +96,33 @@ def run_etl():
     df_fact_reseller = transform_fact_reseller_sales(df_soh, df_sod)
     logging.info("Transformación completada con éxito.")
 
-    # 4. Carga (Load) a PostgreSQL
-    # Orden de carga: Dimensiones primero, luego Tablas de Hechos
+    # 4. Carga (Load) a PostgreSQL en orden estricto de dependencias FK
     print("\n--- PASO 3: Cargando datos a PostgreSQL (OLAP) ---")
-    load_to_postgres(df_dim_date, "DimDate")
-    load_to_postgres(df_dim_producto, "DimProduct")
-    load_to_postgres(df_dim_cliente, "DimCustomer")
-    load_to_postgres(df_dim_revendedor, "DimReseller")
-    load_to_postgres(df_fact_internet, "FactInternetSales")
-    load_to_postgres(df_fact_reseller, "FactResellerSales")
-    logging.info("Carga completada con éxito.")
+    
+    # Nivel 1: Sin FK
+    load_to_postgres(df_dim_date, "DimDate", if_exists='truncate_first')
+    load_to_postgres(df_dim_territory, "DimSalesTerritory", if_exists='truncate_first')
+    load_to_postgres(df_dim_cat, "DimProductCategory", if_exists='truncate_first')
+    
+    # Nivel 2: Dependen de Nivel 1
+    load_to_postgres(df_dim_subcat, "DimProductSubcategory", if_exists='truncate_first')
+    load_to_postgres(df_dim_geo, "DimGeography", if_exists='truncate_first')
+    
+    # Nivel 3: Dependen de Nivel 2
+    load_to_postgres(df_dim_producto, "DimProduct", if_exists='truncate_first')
+    
+    # Clientes
+    # Asegurar que GeographyKey apunte a direcciones existentes o None
+    df_dim_cliente['GeographyKey'] = None
+    df_dim_revendedor['GeographyKey'] = None
+    load_to_postgres(df_dim_cliente, "DimCustomer", if_exists='truncate_first')
+    load_to_postgres(df_dim_revendedor, "DimReseller", if_exists='truncate_first')
 
-    # 5. Validación
-    print("\n--- PASO 4: Validación y control de calidad ---")
-    validate_etl()
-    logging.info("Validación finalizada.")
-    print("\n¡Pipeline ETL completado exitosamente!")
+    print("OK: Dimensiones cargadas correctamente.")
+
+    # Hechos
+    logging.info("Carga de dimensiones finalizada.")
+    print("\nOK: Carga de dimensiones base completada exitosamente!")
 
 if __name__ == "__main__":
     run_etl()

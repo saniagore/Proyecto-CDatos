@@ -7,6 +7,7 @@ def transform_dim_revendedor(
 ) -> pd.DataFrame:
     """
     Transforma tiendas/revendedores para DimReseller (Reseller Sales) usando Pandas.
+    Asegura unicidad por ResellerKey (StoreID).
     """
     # Filtrar clientes tipo tienda (StoreID not null)
     df_store_cust = df_customer[df_customer['StoreID'].notnull()].copy()
@@ -19,10 +20,13 @@ def transform_dim_revendedor(
         right_on='BusinessEntityID'
     )
     
-    df['ResellerKey'] = df['StoreID']
+    df['ResellerKey'] = df['StoreID'].astype(int)
     df['ResellerAlternateKey'] = df['AccountNumber']
     df['ResellerName'] = df['Name']
     df['GeographyKey'] = df.get('TerritoryID', None)
+    
+    # Eliminar duplicados para garantizar llave primaria única
+    df = df.drop_duplicates(subset=['ResellerKey'])
     
     cols = ['ResellerKey', 'ResellerAlternateKey', 'ResellerName', 'GeographyKey']
     existing_cols = [c for c in cols if c in df.columns]
