@@ -1,0 +1,18 @@
+# Entorno virtual y dependencias
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Variables de entorno y credenciales sensibles
+.env
+.env.local
+
+# Logs
+etl_adventureworks/logs/*.log
+!etl_adventureworks/logs/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
