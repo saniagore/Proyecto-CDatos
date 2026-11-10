@@ -3,25 +3,28 @@
 Este repositorio contiene la implementación del pipeline ETL para construir los Datamarts de **Ventas por Internet (Internet Sales)** y **Ventas por Revendedores (Reseller Sales)** a partir de la base de datos operacional **AdventureWorks (OLTP en SQL Server)** hacia la bodega de datos en **PostgreSQL (OLAP)**.
 
 ## Estructura del Proyecto
-
-```text
 etl_adventureworks/
-├── config.py             # Conexiones (lee claves y credenciales desde variables de entorno)
+├── config.py               # Conexiones (lee claves y credenciales desde variables de entorno)
+├── extract.py              # Consultas con Pandas contra la base operacional (OLTP)
+├── load.py                 # Carga de DataFrames a PostgreSQL (df.to_sql)
+├── main.py                 # Orquestador del pipeline y orden de carga
+├── validacion.py           # Conteos y sumas de control contra la bodega de la entrega 3
 ├── ddl/
-│   └── crear_tablas.sql  # Esquema DDL del datamart en PostgreSQL
-├── extract.py            # Funciones read_sql con Pandas contra la base operacional (OLTP)
-├── transform/            # Lógica modular de transformación con DataFrames de Pandas
-│   ├── dim_producto.py   # Transformación y desnormalización de producto, subcategoría y categoría
-│   ├── dim_cliente.py    # Transformación de clientes individuales (Internet Sales)
-│   ├── dim_revendedor.py # Transformación de clientes comerciales / tiendas (Reseller Sales)
-│   ├── dim_date.py       # Generación de la dimensión calendario
-│   └── hechos.py         # Transformación de FactInternetSales y FactResellerSales
-├── load.py               # Carga de DataFrames a PostgreSQL (df.to_sql)
-├── main.py               # Orquestador del pipeline y orden de carga
-├── validacion.py         # Conteos y sumas de control contra la bodega de la entrega 3
-└── logs/                 # Registro de ejecuciones y trazabilidad
+│   └── crear_tablas.sql    # Esquema DDL del datamart en PostgreSQL
+├── transform/              # Transformaciones modulares con DataFrames de Pandas
+│   ├── dim_categorias.py   # Categorías y subcategorías de producto
+│   ├── dim_cliente.py      # Clientes individuales (Internet Sales)
+│   ├── dim_date.py         # Dimensión calendario
+│   ├── dim_empleado.py     # Empleados y vendedores
+│   ├── dim_geografia.py    # Territorios y geografía
+│   ├── dim_moneda.py       # Monedas (DimCurrency)
+│   ├── dim_motivo.py       # Motivos de venta (DimSalesReason)
+│   ├── dim_producto.py     # Producto desnormalizado con subcategoría y categoría
+│   ├── dim_promocion.py    # Ofertas especiales (DimPromotion)
+│   ├── dim_revendedor.py   # Revendedores / tiendas (Reseller Sales)
+│   └── hechos.py           # FactInternetSales, FactResellerSales y FactInternetSalesReason
+└── logs/                   # Logs de ejecución (no se suben al repositorio)
 ```
-
 ## Requisitos Previos
 
 - Python 3.10+
