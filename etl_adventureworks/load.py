@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 from .config import get_olap_engine, OLAP_SCHEMA
 
 def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append', chunksize: int = 5000):
@@ -12,6 +13,7 @@ def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append
     # Normalizar nombres de columnas a minúsculas para coincidir exactamente con PostgreSQL
     df_to_load = df.copy()
     df_to_load.columns = [col.lower() for col in df_to_load.columns]
+    df_to_load['ultima_fecha_carga'] = datetime.now()  
     tbl_name = table_name.lower()
 
     if if_exists == 'truncate_first':

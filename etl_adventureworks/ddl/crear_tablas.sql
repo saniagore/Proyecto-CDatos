@@ -265,3 +265,21 @@ CREATE TABLE IF NOT EXISTS FactResellerSales (
     ShipDate TIMESTAMP,
     PRIMARY KEY (SalesOrderNumber, SalesOrderLineNumber)
 );
+
+
+-- Columna de control: última fecha de carga (en todas las tablas)
+ALTER TABLE IF EXISTS DimDate ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimSalesTerritory ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimGeography ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimCustomer ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimProductCategory ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimProductSubcategory ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimProduct ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimReseller ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimEmployee ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimPromotion ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimCurrency ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS DimSalesReason ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS FactInternetSales ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS FactInternetSalesReason ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
+ALTER TABLE IF EXISTS FactResellerSales ADD COLUMN IF NOT EXISTS ultima_fecha_carga TIMESTAMP;
