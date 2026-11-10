@@ -22,7 +22,10 @@ from .extract import (
     extract_special_offer,
     extract_employee,
     extract_sales_person,
+    extract_sales_reason,
+    extract_sales_order_header_sales_reason,
 )
+from .transform.dim_motivo import transform_dim_sales_reason
 from .transform.dim_empleado import transform_dim_employee
 from .transform.dim_moneda import transform_dim_currency
 from .transform.dim_promocion import transform_dim_promotion
@@ -40,7 +43,8 @@ from .transform.dim_cliente import transform_dim_cliente
 from .transform.dim_revendedor import transform_dim_revendedor
 from .transform.hechos import (
     transform_fact_internet_sales,
-    transform_fact_reseller_sales
+    transform_fact_reseller_sales,
+    transform_fact_internet_sales_reason,
 )
 from .validacion import validate_etl
 
@@ -85,6 +89,8 @@ def run_etl():
     df_offer = extract_special_offer()
     df_employee = extract_employee()
     df_sales_person = extract_sales_person()
+    df_reason = extract_sales_reason()
+    df_header_reason = extract_sales_order_header_sales_reason()
     logging.info("Extracción completada.")
 
     # 3. Transformación (Transform) con Pandas
@@ -106,12 +112,15 @@ def run_etl():
     df_dim_currency = transform_dim_currency(df_currency)
     df_dim_promo = transform_dim_promotion(df_offer)
     df_dim_employee = transform_dim_employee(df_employee, df_person, df_sales_person)
+    df_dim_reason = transform_dim_sales_reason(df_reason)
     
     # Hechos
     df_fact_internet = transform_fact_internet_sales(
         df_soh, df_sod, df_prod, df_currency_rate, df_dim_currency)
     df_fact_reseller = transform_fact_reseller_sales(
         df_soh, df_sod, df_cust, df_prod, df_currency_rate, df_dim_currency)
+    df_fact_internet_reason = transform_fact_internet_sales_reason(
+        df_soh, df_sod, df_header_reason)
     logging.info("Transformación completada con éxito.")
 
     # 4. Carga (Load) a PostgreSQL en orden estricto de dependencias FK
@@ -139,10 +148,11 @@ def run_etl():
     load_to_postgres(df_dim_currency, "DimCurrency", if_exists='truncate_first')
     load_to_postgres(df_dim_promo, "DimPromotion", if_exists='truncate_first')
     load_to_postgres(df_dim_employee, "DimEmployee", if_exists='truncate_first')
+    load_to_postgres(df_dim_reason, "DimSalesReason", if_exists='truncate_first')
 
     load_to_postgres(df_fact_internet, "FactInternetSales", if_exists='truncate_first')
     load_to_postgres(df_fact_reseller, "FactResellerSales", if_exists='truncate_first')
-
+    load_to_postgres(df_fact_internet_reason, "FactInternetSalesReason", if_exists='truncate_first')
     print("OK: Dimensiones cargadas correctamente.")
 
     # Hechos

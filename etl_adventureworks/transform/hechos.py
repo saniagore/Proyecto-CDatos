@@ -145,3 +145,29 @@ def transform_fact_reseller_sales(
     ]
     #existing_cols = [c for c in cols if c in df.columns]
     return df[cols]
+
+def transform_fact_internet_sales_reason(
+    df_header: pd.DataFrame,
+    df_detail: pd.DataFrame,
+    df_header_reason: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    FactInternetSalesReason: una fila por línea de internet y motivo.
+    La numeración de línea es la misma que usa FactInternetSales.
+    """
+    # Solo pedidos por internet, con su número de pedido
+    df_h = df_header[df_header['OnlineOrderFlag'] == 1][['SalesOrderID', 'SalesOrderNumber']]
+    df = df_detail.merge(df_h, on='SalesOrderID', how='inner')
+
+    # Misma numeración de línea que en FactInternetSales
+    df = df.sort_values(['SalesOrderID', 'SalesOrderDetailID'])
+    df['SalesOrderLineNumber'] = df.groupby('SalesOrderID').cumcount() + 1
+
+    # Cada línea recibe los motivos de su pedido
+    df = df.merge(df_header_reason[['SalesOrderID', 'SalesReasonID']], on='SalesOrderID', how='inner')
+    df['SalesReasonKey'] = df['SalesReasonID']
+
+    df['SalesReasonAlternateKey'] = df['SalesReasonID']
+
+    cols = ['SalesOrderNumber', 'SalesOrderLineNumber', 'SalesReasonKey']
+    return df[cols]
