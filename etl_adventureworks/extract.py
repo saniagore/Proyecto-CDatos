@@ -83,3 +83,6 @@ def extract_sales_reason() -> pd.DataFrame:
 
 def extract_sales_order_header_sales_reason() -> pd.DataFrame:
     return extract_table("Sales.SalesOrderHeaderSalesReason")
+
+def extract_product_cost_history() -> pd.DataFrame:
+    return extract_table("Production.ProductCostHistory")

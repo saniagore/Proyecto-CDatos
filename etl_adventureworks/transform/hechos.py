@@ -3,7 +3,7 @@ import pandas as pd
 def transform_fact_internet_sales(
     df_header: pd.DataFrame,
     df_detail: pd.DataFrame,
-    df_product: pd.DataFrame,
+    df_cost_history: pd.DataFrame,
     df_currency_rate: pd.DataFrame,
     df_dim_currency: pd.DataFrame
 ) -> pd.DataFrame:
@@ -19,9 +19,12 @@ def transform_fact_internet_sales(
     df = df.sort_values(['SalesOrderID', 'SalesOrderDetailID'])
     df['SalesOrderLineNumber'] = df.groupby('SalesOrderID').cumcount() + 1
 
-    # Costo estándar del producto 
-    df = df.merge(df_product[['ProductID', 'StandardCost']], on='ProductID', how='left')
-    df['ProductStandardCost'] = df['StandardCost']  
+    # Costo vigente en la fecha del pedido (historial de costos)
+    df = df.sort_values('OrderDate')
+    df_cost = df_cost_history[['ProductID', 'StartDate', 'StandardCost']].sort_values('StartDate')
+    df = pd.merge_asof(df, df_cost, left_on='OrderDate', right_on='StartDate',
+                       by='ProductID', direction='backward')
+    df['ProductStandardCost'] = df['StandardCost']
 
     # Moneda de la venta. Si el pedido no tiene tasa (NULL), es USD.
     df = df.merge(df_currency_rate[['CurrencyRateID', 'ToCurrencyCode']],
@@ -75,7 +78,7 @@ def transform_fact_reseller_sales(
     df_header: pd.DataFrame,
     df_detail: pd.DataFrame,
     df_customer: pd.DataFrame,
-    df_product: pd.DataFrame,
+    df_cost_history: pd.DataFrame,
     df_currency_rate: pd.DataFrame,
     df_dim_currency: pd.DataFrame
 ) -> pd.DataFrame:
@@ -95,8 +98,11 @@ def transform_fact_reseller_sales(
     df = df.merge(df_customer[['CustomerID', 'StoreID']], on='CustomerID', how='left')
     df['ResellerKey'] = df['StoreID']
 
-    # Costo estándar del producto
-    df = df.merge(df_product[['ProductID', 'StandardCost']], on='ProductID', how='left')
+    # Costo vigente en la fecha del pedido (historial de costos)
+    df = df.sort_values('OrderDate')
+    df_cost = df_cost_history[['ProductID', 'StartDate', 'StandardCost']].sort_values('StartDate')
+    df = pd.merge_asof(df, df_cost, left_on='OrderDate', right_on='StartDate',
+                       by='ProductID', direction='backward')
     df['ProductStandardCost'] = df['StandardCost']
 
     # Moneda de la venta (igual que en internet). Si no hay tasa, USD.

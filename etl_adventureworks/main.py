@@ -24,6 +24,7 @@ from .extract import (
     extract_sales_person,
     extract_sales_reason,
     extract_sales_order_header_sales_reason,
+    extract_product_cost_history,
 )
 from .transform.dim_motivo import transform_dim_sales_reason
 from .transform.dim_empleado import transform_dim_employee
@@ -91,6 +92,7 @@ def run_etl():
     df_sales_person = extract_sales_person()
     df_reason = extract_sales_reason()
     df_header_reason = extract_sales_order_header_sales_reason()
+    df_cost_history = extract_product_cost_history()
     logging.info("Extracción completada.")
 
     # 3. Transformación (Transform) con Pandas
@@ -116,9 +118,9 @@ def run_etl():
     
     # Hechos
     df_fact_internet = transform_fact_internet_sales(
-        df_soh, df_sod, df_prod, df_currency_rate, df_dim_currency)
+        df_soh, df_sod, df_cost_history, df_currency_rate, df_dim_currency)
     df_fact_reseller = transform_fact_reseller_sales(
-        df_soh, df_sod, df_cust, df_prod, df_currency_rate, df_dim_currency)
+        df_soh, df_sod, df_cust, df_cost_history, df_currency_rate, df_dim_currency)
     df_fact_internet_reason = transform_fact_internet_sales_reason(
         df_soh, df_sod, df_header_reason)
     logging.info("Transformación completada con éxito.")
