@@ -80,7 +80,8 @@ def transform_fact_reseller_sales(
     df_customer: pd.DataFrame,
     df_cost_history: pd.DataFrame,
     df_currency_rate: pd.DataFrame,
-    df_dim_currency: pd.DataFrame
+    df_dim_currency: pd.DataFrame,
+    df_product: pd.DataFrame
 ) -> pd.DataFrame:
     """
     Transforma el datamart de FactResellerSales (OnlineOrderFlag = 0 / False) usando Pandas.
@@ -89,6 +90,17 @@ def transform_fact_reseller_sales(
     # Solo pedidos de revendedores
     df_h = df_header[df_header['OnlineOrderFlag'] == 0].copy()
     df = df_detail.merge(df_h, on='SalesOrderID', how='inner')
+
+    # Entrega 3 solo incluye líneas vendidas durante la vigencia del producto.
+    product_dates = df_product[
+        ['ProductID', 'SellStartDate', 'SellEndDate']
+    ].drop_duplicates('ProductID')
+    df = df.merge(product_dates, on='ProductID', how='inner')
+    valid_product_date = (
+        (df['OrderDate'] >= df['SellStartDate'])
+        & (df['SellEndDate'].isna() | (df['OrderDate'] <= df['SellEndDate']))
+    )
+    df = df[valid_product_date].copy()
     
     # Número de línea dentro de cada pedido: 1, 2, 3...
     df = df.sort_values(['SalesOrderID', 'SalesOrderDetailID'])

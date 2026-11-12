@@ -139,7 +139,8 @@ def run_etl():
     df_fact_internet = transform_fact_internet_sales(
         df_soh, df_sod, df_cost_history, df_currency_rate, df_dim_currency)
     df_fact_reseller = transform_fact_reseller_sales(
-        df_soh, df_sod, df_cust, df_cost_history, df_currency_rate, df_dim_currency)
+        df_soh, df_sod, df_cust, df_cost_history, df_currency_rate,
+        df_dim_currency, df_prod)
     df_fact_internet_reason = transform_fact_internet_sales_reason(
         df_soh, df_sod, df_header_reason)
     logging.info("Transformación completada con éxito.")
