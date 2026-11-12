@@ -24,6 +24,15 @@ OLAP_USER = os.getenv("OLAP_USER", "postgres")
 OLAP_PASSWORD = os.getenv("OLAP_PASSWORD", "")
 OLAP_SCHEMA = os.getenv("OLAP_SCHEMA", "public")
 
+# --- Configuración Bodega Entrega 3 (SQL Server) ---
+ENTREGA3_SERVER = os.getenv("ENTREGA3_SERVER", OLTP_SERVER)
+ENTREGA3_DB = os.getenv("ENTREGA3_DB", "AdventureWorksDW")
+ENTREGA3_DRIVER = os.getenv("ENTREGA3_DRIVER", OLTP_DRIVER)
+ENTREGA3_TRUSTED = os.getenv("ENTREGA3_TRUSTED", OLTP_TRUSTED)
+ENTREGA3_USER = os.getenv("ENTREGA3_USER", OLTP_USER)
+ENTREGA3_PASSWORD = os.getenv("ENTREGA3_PASSWORD", OLTP_PASSWORD)
+ENTREGA3_SCHEMA = os.getenv("ENTREGA3_SCHEMA", "dbo")
+
 def get_oltp_engine():
     """Genera la conexión SQLAlchemy para SQL Server Express usando Windows Authentication o SQL Auth."""
     # Buscar el driver ODBC instalado compatible
@@ -53,3 +62,26 @@ def get_olap_engine():
     """Genera la conexión SQLAlchemy para PostgreSQL (OLAP)."""
     engine_url = f"postgresql+psycopg2://{OLAP_USER}:{OLAP_PASSWORD}@{OLAP_HOST}:{OLAP_PORT}/{OLAP_DB}"
     return create_engine(engine_url)
+
+
+def get_entrega3_engine():
+    """Genera la conexión SQLAlchemy para la bodega SQL Server de la Entrega 3."""
+    if ENTREGA3_TRUSTED.lower() in ("yes", "true", "1"):
+        conn_str = (
+            f"DRIVER={{{ENTREGA3_DRIVER}}};"
+            f"SERVER={ENTREGA3_SERVER};"
+            f"DATABASE={ENTREGA3_DB};"
+            "Trusted_Connection=yes;"
+            "TrustServerCertificate=yes;"
+        )
+    else:
+        conn_str = (
+            f"DRIVER={{{ENTREGA3_DRIVER}}};"
+            f"SERVER={ENTREGA3_SERVER};"
+            f"DATABASE={ENTREGA3_DB};"
+            f"UID={ENTREGA3_USER};"
+            f"PWD={ENTREGA3_PASSWORD};"
+            "TrustServerCertificate=yes;"
+        )
+    params = urllib.parse.quote_plus(conn_str)
+    return create_engine(f"mssql+pyodbc:///?odbc_connect={params}")

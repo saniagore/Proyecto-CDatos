@@ -30,6 +30,7 @@ etl_adventureworks/
 - Python 3.10+
 - Acceso a la base de datos operacional en SQL Server (`AdventureWorks`).
 - Acceso a la base de datos destino en PostgreSQL (`AdventureWorksDW`).
+- Acceso a la bodega SQL Server de la Entrega 3 para ejecutar las validaciones.
 
 ## Instalación
 
@@ -50,6 +51,8 @@ etl_adventureworks/
    ```bash
    cp .env.example .env
    ```
+   Configure también `ENTREGA3_SERVER`, `ENTREGA3_DB` y sus credenciales.
+   `VALIDATION_TOLERANCE` define la diferencia absoluta máxima aceptada (por defecto, `0.01`).
 
 ## Ejecución
 

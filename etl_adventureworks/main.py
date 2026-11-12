@@ -49,13 +49,30 @@ from .transform.hechos import (
 )
 from .validacion import validate_etl
 
-os.makedirs("etl_adventureworks/logs", exist_ok=True)
-log_file = f"etl_adventureworks/logs/etl_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+log_file = os.path.join(
+    LOG_DIR, f"etl_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+)
 logging.basicConfig(
     filename=log_file,
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
+
+
+def _load_table(df, table_name: str) -> bool:
+    """Carga una tabla y permite que el resto del pipeline continúe si falla."""
+    try:
+        load_to_postgres(df, table_name, if_exists='truncate_first')
+        logging.info("Tabla %s cargada exitosamente.", table_name)
+        return True
+    except Exception:
+        logging.exception("Error cargando la tabla %s", table_name)
+        print(f"FAIL: no se pudo cargar '{table_name}'. Revise el log.")
+        return False
+
 
 def run_etl():
     print("Iniciando pipeline ETL para Datamarts de AdventureWorks...")
@@ -129,37 +146,43 @@ def run_etl():
     print("\n--- PASO 3: Cargando datos a PostgreSQL (OLAP) ---")
     
     # Nivel 1: Sin FK
-    load_to_postgres(df_dim_date, "DimDate", if_exists='truncate_first')
-    load_to_postgres(df_dim_territory, "DimSalesTerritory", if_exists='truncate_first')
-    load_to_postgres(df_dim_cat, "DimProductCategory", if_exists='truncate_first')
+    load_results = []
+    load_results.append(_load_table(df_dim_date, "DimDate"))
+    load_results.append(_load_table(df_dim_territory, "DimSalesTerritory"))
+    load_results.append(_load_table(df_dim_cat, "DimProductCategory"))
     
     # Nivel 2: Dependen de Nivel 1
-    load_to_postgres(df_dim_subcat, "DimProductSubcategory", if_exists='truncate_first')
-    load_to_postgres(df_dim_geo, "DimGeography", if_exists='truncate_first')
+    load_results.append(_load_table(df_dim_subcat, "DimProductSubcategory"))
+    load_results.append(_load_table(df_dim_geo, "DimGeography"))
     
     # Nivel 3: Dependen de Nivel 2
-    load_to_postgres(df_dim_producto, "DimProduct", if_exists='truncate_first')
+    load_results.append(_load_table(df_dim_producto, "DimProduct"))
     
     # Clientes
     # Asegurar que GeographyKey apunte a direcciones existentes o None
     df_dim_cliente['GeographyKey'] = None
     df_dim_revendedor['GeographyKey'] = None
-    load_to_postgres(df_dim_cliente, "DimCustomer", if_exists='truncate_first')
-    load_to_postgres(df_dim_revendedor, "DimReseller", if_exists='truncate_first')
+    load_results.append(_load_table(df_dim_cliente, "DimCustomer"))
+    load_results.append(_load_table(df_dim_revendedor, "DimReseller"))
 
-    load_to_postgres(df_dim_currency, "DimCurrency", if_exists='truncate_first')
-    load_to_postgres(df_dim_promo, "DimPromotion", if_exists='truncate_first')
-    load_to_postgres(df_dim_employee, "DimEmployee", if_exists='truncate_first')
-    load_to_postgres(df_dim_reason, "DimSalesReason", if_exists='truncate_first')
+    load_results.append(_load_table(df_dim_currency, "DimCurrency"))
+    load_results.append(_load_table(df_dim_promo, "DimPromotion"))
+    load_results.append(_load_table(df_dim_employee, "DimEmployee"))
+    load_results.append(_load_table(df_dim_reason, "DimSalesReason"))
 
-    load_to_postgres(df_fact_internet, "FactInternetSales", if_exists='truncate_first')
-    load_to_postgres(df_fact_reseller, "FactResellerSales", if_exists='truncate_first')
-    load_to_postgres(df_fact_internet_reason, "FactInternetSalesReason", if_exists='truncate_first')
+    load_results.append(_load_table(df_fact_internet, "FactInternetSales"))
+    load_results.append(_load_table(df_fact_reseller, "FactResellerSales"))
+    load_results.append(_load_table(df_fact_internet_reason, "FactInternetSalesReason"))
     print("OK: Dimensiones cargadas correctamente.")
 
     # Hechos
     logging.info("Carga de dimensiones finalizada.")
     print("\nOK: Carga de dimensiones base completada exitosamente!")
+    if not all(load_results):
+        logging.warning("El ETL terminó con una o más tablas fallidas.")
+
+    print("\n--- PASO 4: Validando métricas contra Entrega 3 ---")
+    validate_etl()
 
 if __name__ == "__main__":
     run_etl()
