@@ -5,7 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 
 # Cargar variables de entorno desde el archivo .env
-load_dotenv()
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 # --- Configuración Base de Datos Origen (SQL Server Express OLTP) ---
 OLTP_SERVER = os.getenv("OLTP_SERVER", r"localhost\SQLEXPRESS")
@@ -72,6 +73,7 @@ def get_olap_engine():
     return create_engine(
         engine_url,
         connect_args={"options": "-c client_encoding=UTF8"},
+        pool_pre_ping=True,
     )
 
 

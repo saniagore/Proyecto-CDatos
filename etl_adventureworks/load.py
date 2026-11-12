@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 from .config import get_olap_engine, OLAP_SCHEMA
+from sqlalchemy import text
 
 def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append', chunksize: int = 5000):
     """
@@ -18,7 +19,12 @@ def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append
 
     if if_exists == 'truncate_first':
         with engine.begin() as conn:
-            conn.exec_driver_sql(f"TRUNCATE TABLE {OLAP_SCHEMA}.{tbl_name} CASCADE;")
+            conn.execute(
+                text(
+                    f'TRUNCATE TABLE "{OLAP_SCHEMA}"."{tbl_name}" '
+                    "CASCADE"
+                )
+            )
         actual_if_exists = 'append'
     else:
         actual_if_exists = if_exists
@@ -29,7 +35,7 @@ def load_to_postgres(df: pd.DataFrame, table_name: str, if_exists: str = 'append
         schema=OLAP_SCHEMA,
         if_exists=actual_if_exists,
         index=False,
-        chunksize=chunksize,
+        chunksize=min(chunksize, 1000),
         method='multi'
     )
     print(f"OK: Tabla '{table_name}' cargada exitosamente.")
