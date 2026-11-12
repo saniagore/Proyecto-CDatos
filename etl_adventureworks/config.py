@@ -2,6 +2,7 @@ import os
 import urllib.parse
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -60,8 +61,18 @@ def get_oltp_engine():
 
 def get_olap_engine():
     """Genera la conexión SQLAlchemy para PostgreSQL (OLAP)."""
-    engine_url = f"postgresql+psycopg2://{OLAP_USER}:{OLAP_PASSWORD}@{OLAP_HOST}:{OLAP_PORT}/{OLAP_DB}"
-    return create_engine(engine_url)
+    engine_url = URL.create(
+        "postgresql+psycopg2",
+        username=OLAP_USER,
+        password=OLAP_PASSWORD,
+        host=OLAP_HOST,
+        port=int(OLAP_PORT),
+        database=OLAP_DB,
+    )
+    return create_engine(
+        engine_url,
+        connect_args={"options": "-c client_encoding=UTF8"},
+    )
 
 
 def get_entrega3_engine():
