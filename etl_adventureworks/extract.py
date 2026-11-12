@@ -39,8 +39,13 @@ def extract_product_subcategory() -> pd.DataFrame:
 def extract_product_category() -> pd.DataFrame:
     return extract_table("Production.ProductCategory")
 
-def extract_address() -> pd.DataFrame:
-    return extract_table("Person.Address")
+# No pasamos todo porque genera error 
+# Person.Address tiene SpatialLocation (tipo geography), que pyodbc no puede leer.
+def extract_address():
+    return extract_table("""
+        SELECT AddressID, AddressLine1, AddressLine2, City, StateProvinceID, PostalCode
+        FROM Person.Address
+    """)
 
 def extract_state_province() -> pd.DataFrame:
     return extract_table("Person.StateProvince")
@@ -51,8 +56,15 @@ def extract_country_region() -> pd.DataFrame:
 def extract_sales_territory() -> pd.DataFrame:
     return extract_table("Sales.SalesTerritory")
 
-def extract_employee() -> pd.DataFrame:
-    return extract_table("HumanResources.Employee")
+# No pasamos todo porque genera error 
+# HumanResources.Employee tiene un campo de tipo hierarchyid, que pyodbc no puede leer.
+def extract_employee():
+    return extract_table("""
+        SELECT BusinessEntityID, NationalIDNumber, LoginID, JobTitle, BirthDate,
+               MaritalStatus, Gender, HireDate, SalariedFlag, VacationHours,
+               SickLeaveHours, CurrentFlag
+        FROM HumanResources.Employee
+    """)
 
 def extract_sales_person() -> pd.DataFrame:
     return extract_table("Sales.SalesPerson")
@@ -71,3 +83,6 @@ def extract_sales_reason() -> pd.DataFrame:
 
 def extract_sales_order_header_sales_reason() -> pd.DataFrame:
     return extract_table("Sales.SalesOrderHeaderSalesReason")
+
+def extract_product_cost_history() -> pd.DataFrame:
+    return extract_table("Production.ProductCostHistory")
